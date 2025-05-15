@@ -4,7 +4,7 @@ model:
   weights: "yolov8l.pt"  # Will be downloaded automatically
   confidence_threshold: 0.5
   iou_threshold: 0.45
-  device: "cpu"  # Use "0" for first GPU, "cpu" for CPU
+  device: "0"  # Use "0" for first GPU, "cpu" for CPU
 
 classes:
   # COCO class indices (garbage truck could be mapped to truck class 7)

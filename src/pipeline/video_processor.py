@@ -212,7 +212,14 @@ class VideoProcessor:
             if self.timestamp_logger:
                 # Save appearance summary
                 summary_path = os.path.join(os.path.dirname(self.output_path), 'garbage_truck_summary.csv')
-                self.timestamp_logger.save_appearance_summary(summary_path)
+                if hasattr(self.timestamp_logger, 'save_appearance_summary'):
+                    self.timestamp_logger.save_appearance_summary(summary_path)
+                else:
+                    # Use truck timelines as appearance summary
+                    timelines = self.timestamp_logger.get_truck_timelines()
+                    if not timelines.empty:
+                        timelines.to_csv(summary_path, index=False)
+                        print(f"Truck timelines saved as appearance summary to {summary_path}")
                 
                 # Save truck timelines
                 timelines_path = os.path.join(os.path.dirname(self.output_path), 'truck_timelines.csv')
@@ -234,7 +241,11 @@ class VideoProcessor:
                     extracted_frames = self.extract_truck_frames()
                 
                 # Print summary
-                summary = self.timestamp_logger.get_appearance_summary()
+                if hasattr(self.timestamp_logger, 'get_appearance_summary'):
+                    summary = self.timestamp_logger.get_appearance_summary()
+                else:
+                    # Use truck timelines as appearance summary
+                    summary = self.timestamp_logger.get_truck_timelines()
                 if not summary.empty:
                     print("\nGarbage Truck Appearance Summary:")
                     print(summary)

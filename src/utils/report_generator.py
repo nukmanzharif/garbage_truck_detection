@@ -7,7 +7,7 @@ import shutil
 
 def generate_garbage_truck_report(truck_classifications, truck_timelines, output_dir=None):
     """
-    Generate a final report of garbage truck appearances.
+    Generate a simplified report of garbage truck appearances.
     
     Args:
         truck_classifications: DataFrame with truck classification results
@@ -37,11 +37,10 @@ def generate_garbage_truck_report(truck_classifications, truck_timelines, output
         print("No garbage trucks identified in the video.")
         return None
     
-    # Format the report with relevant columns
+    # Format the report with only necessary columns
     report_df = garbage_trucks[[
         'truck_id', 'entry_frame', 'entry_time', 'exit_frame', 'exit_time',
-        'duration_seconds', 'image_path', 'video_time', 'classification_confidence',
-        'llm_response'
+        'duration_seconds', 'image_path', 'classification_confidence'
     ]].copy()
     
     # Add timestamp to report filename
@@ -52,20 +51,11 @@ def generate_garbage_truck_report(truck_classifications, truck_timelines, output
     report_df.to_csv(report_path, index=False)
     print(f"Garbage truck report generated: {report_path}")
     
-    # Generate summary statistics
-    total_trucks = len(report_df)
-    total_duration = report_df['duration_seconds'].sum()
-    avg_duration = report_df['duration_seconds'].mean()
-    
-    print(f"Summary: {total_trucks} garbage trucks detected")
-    print(f"Total time on camera: {total_duration:.2f} seconds")
-    print(f"Average duration: {avg_duration:.2f} seconds per truck")
-    
     return report_path
 
 def generate_html_report(report_path, output_dir=None):
     """
-    Generate an enhanced HTML report with embedded images and LLM reasoning.
+    Generate a simplified HTML report with embedded images.
     
     Args:
         report_path: Path to the CSV report
@@ -152,30 +142,19 @@ def generate_html_report(report_path, output_dir=None):
                 border-radius: 8px;
                 border-left: 4px solid #4CAF50;
             }}
-            .reason-box {{
-                margin-top: 15px;
-                padding: 15px;
-                background-color: #f0f8ff;
-                border-radius: 5px;
-                border-left: 4px solid #2196F3;
-            }}
             h1, h2 {{ color: #333; }}
             h3 {{ color: #555; }}
-            .timestamp {{ color: #666; font-size: 0.9em; margin-top: 5px; }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
                 <h1>Garbage Truck Detection Report</h1>
-                <p class="timestamp">Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
             </div>
             
             <div class="summary">
                 <h2>Summary</h2>
                 <p><strong>Total garbage trucks detected:</strong> {len(report_df)}</p>
-                <p><strong>Total time on camera:</strong> {report_df['duration_seconds'].sum():.2f} seconds</p>
-                <p><strong>Average duration:</strong> {report_df['duration_seconds'].mean():.2f} seconds per truck</p>
             </div>
             
             <h2>Detected Garbage Trucks</h2>
@@ -183,15 +162,12 @@ def generate_html_report(report_path, output_dir=None):
     
     # Add each truck entry
     for _, truck in report_df.iterrows():
-        # Format entry/exit times for display
+        # Format entry/exit times for display (already in video time format)
         entry_time = truck['entry_time']
         exit_time = truck['exit_time']
         
         # Format duration
         duration = f"{truck['duration_seconds']:.2f} seconds"
-        
-        # Confidence percentage
-        confidence = f"{truck['classification_confidence'] * 100:.1f}%"
         
         html_content += f"""
         <div class="truck-entry">
@@ -204,18 +180,10 @@ def generate_html_report(report_path, output_dir=None):
             
             <div class="truck-details">
                 <table>
-                    <tr><th>Entry Time</th><td>{entry_time}</td></tr>
-                    <tr><th>Exit Time</th><td>{exit_time}</td></tr>
+                    <tr><th>First Seen</th><td>{entry_time}</td></tr>
+                    <tr><th>Last Seen</th><td>{exit_time}</td></tr>
                     <tr><th>Duration</th><td>{duration}</td></tr>
-                    <tr><th>Entry Frame</th><td>{int(truck['entry_frame'])}</td></tr>
-                    <tr><th>Exit Frame</th><td>{int(truck['exit_frame'])}</td></tr>
-                    <tr><th>Classification Confidence</th><td>{confidence}</td></tr>
                 </table>
-                
-                <div class="reason-box">
-                    <h4>GPT-4o Analysis:</h4>
-                    <p>{truck['llm_response']}</p>
-                </div>
             </div>
         </div>
         """
@@ -231,7 +199,7 @@ def generate_html_report(report_path, output_dir=None):
     with open(html_path, 'w') as f:
         f.write(html_content)
     
-    print(f"Enhanced HTML report generated: {html_path}")
+    print(f"HTML report generated: {html_path}")
     return html_path
 
 def format_video_time(frame, fps):
@@ -244,7 +212,7 @@ def format_video_time(frame, fps):
 
 def create_detection_timeline(report_path, fps=30, output_dir=None):
     """
-    Create a visual timeline of garbage truck detections.
+    Create a simplified visual timeline of garbage truck detections.
     
     Args:
         report_path: Path to the garbage truck report CSV
@@ -278,10 +246,7 @@ def create_detection_timeline(report_path, fps=30, output_dir=None):
     else:
         video_duration = 300  # default 5 minutes if no exit frame
     
-    # Calculate minute markers
-    minutes = int(video_duration // 60) + 1
-    
-    # Create HTML content
+    # Create HTML content - simplified timeline
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -297,158 +262,91 @@ def create_detection_timeline(report_path, fps=30, output_dir=None):
                 border-radius: 8px; 
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
             }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
             .timeline {{
                 position: relative;
+                margin: 40px 0;
                 height: 80px;
                 background-color: #f0f0f0;
-                margin: 20px 0;
                 border-radius: 4px;
             }}
-            .timeline-scale {{
-                position: relative;
-                height: 20px;
-                margin-top: 5px;
-            }}
-            .minute-marker {{
+            .timeline-marker {{
                 position: absolute;
-                height: 10px;
-                border-left: 1px solid #999;
                 top: 0;
-            }}
-            .minute-label {{
-                position: absolute;
-                font-size: 10px;
-                color: #666;
-                top: 12px;
-                transform: translateX(-50%);
-            }}
-            .truck-marker {{
-                position: absolute;
-                height: 60px;
-                background-color: rgba(76, 175, 80, 0.7);
-                border: 1px solid #388E3C;
-                border-radius: 3px;
-                top: 10px;
-                cursor: pointer;
-            }}
-            .truck-tooltip {{
-                position: absolute;
-                background-color: white;
-                border: 1px solid #ddd;
+                height: 100%;
+                background-color: #4CAF50;
+                opacity: 0.7;
                 border-radius: 4px;
-                padding: 8px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }}
+            .timeline-label {{
+                position: absolute;
+                bottom: -25px;
+                transform: translateX(-50%);
                 font-size: 12px;
-                z-index: 100;
-                display: none;
+                color: #333;
             }}
-            .truck-marker:hover .truck-tooltip {{
-                display: block;
+            h1, h2 {{ color: #333; text-align: center; }}
+            .truck-details {{
+                margin-bottom: 40px;
+                padding: 15px;
+                background-color: #f9f9f9;
+                border-radius: 8px;
             }}
-            .timestamp {{ color: #666; font-size: 0.9em; margin-top: 5px; }}
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="header">
-                <h1>Garbage Truck Detection Timeline</h1>
-                <p class="timestamp">Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-            </div>
+            <h1>Garbage Truck Detection Timeline</h1>
             
             <div class="timeline">
     """
     
-    # Add truck markers to the timeline
+    # Add markers for each truck appearance
     for _, truck in report_df.iterrows():
-        entry_frame = truck['entry_frame']
-        exit_frame = truck['exit_frame']
-        
-        # Convert frames to timeline position (%)
-        start_percent = (entry_frame / (fps * 60 * minutes)) * 100
-        duration_percent = ((exit_frame - entry_frame) / (fps * 60 * minutes)) * 100
-        
-        # Format times for display
-        entry_time = format_video_time(entry_frame, fps)
-        exit_time = format_video_time(exit_frame, fps)
+        entry_percent = (truck['entry_frame'] / max_frame) * 100
+        exit_percent = (truck['exit_frame'] / max_frame) * 100
+        width_percent = exit_percent - entry_percent
         
         html_content += f"""
-                <div class="truck-marker" style="left: {start_percent:.2f}%; width: {duration_percent:.2f}%;">
-                    <div class="truck-tooltip">
-                        <strong>Truck ID:</strong> {truck['truck_id']}<br>
-                        <strong>Entry:</strong> {entry_time}<br>
-                        <strong>Exit:</strong> {exit_time}<br>
-                        <strong>Duration:</strong> {truck['duration_seconds']:.2f}s
-                    </div>
+                <div class="timeline-marker" style="left: {entry_percent}%; width: {width_percent}%;">
+                    <div class="timeline-label">ID: {int(truck['truck_id'])}</div>
                 </div>
         """
     
     html_content += """
             </div>
             
-            <div class="timeline-scale">
+            <div class="truck-details">
+                <h2>Truck Appearance Details</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">Truck ID</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">First Seen</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Last Seen</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Duration</th>
+                    </tr>
     """
     
-    # Add minute markers
-    for i in range(minutes + 1):
-        position_percent = (i / minutes) * 100
+    # Add rows for each truck
+    for _, truck in report_df.iterrows():
         html_content += f"""
-                <div class="minute-marker" style="left: {position_percent:.2f}%;"></div>
-                <div class="minute-label" style="left: {position_percent:.2f}%;">{i}:00</div>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{int(truck['truck_id'])}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{truck['entry_time']}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{truck['exit_time']}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">{truck['duration_seconds']:.2f} seconds</td>
+                    </tr>
         """
     
     html_content += """
-                        </div>
-            
-            <div class="summary-details">
-                <h3>Video Summary</h3>
-                <ul>
-                    <li><strong>Total video duration:</strong> {minutes} minutes ({video_duration:.2f} seconds)</li>
-                    <li><strong>Total garbage trucks detected:</strong> {len(report_df)}</li>
-                    <li><strong>Average time on camera:</strong> {report_df['duration_seconds'].mean():.2f} seconds</li>
-                </ul>
+                </table>
             </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th>Truck ID</th>
-                        <th>Entry Time</th>
-                        <th>Exit Time</th>
-                        <th>Duration</th>
-                        <th>Confidence</th>
-                    </tr>
-                </thead>
-                <tbody>
-"""
-    
-    # Add table rows for each truck
-    for _, truck in report_df.iterrows():
-        entry_time = format_video_time(truck['entry_frame'], fps)
-        exit_time = format_video_time(truck['exit_frame'], fps)
-        duration = f"{truck['duration_seconds']:.2f}s"
-        confidence = f"{truck['classification_confidence'] * 100:.1f}%"
-        
-        html_content += f"""
-                    <tr>
-                        <td>{truck['truck_id']}</td>
-                        <td>{entry_time}</td>
-                        <td>{exit_time}</td>
-                        <td>{duration}</td>
-                        <td>{confidence}</td>
-                    </tr>
-"""
-    
-    html_content += """
-                </tbody>
-            </table>
         </div>
     </body>
     </html>
-"""
+    """
     
     # Save HTML timeline
-    timeline_path = os.path.join(output_dir, 'detection_timeline.html')
+    timeline_path = os.path.join(output_dir, 'truck_timeline.html')
     with open(timeline_path, 'w') as f:
         f.write(html_content)
     

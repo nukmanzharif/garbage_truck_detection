@@ -3,3 +3,5 @@ __pycache__/
 venv/
 /outputs/
 yolov8l.pt
+yolov8l.torchscript
+/best_frames/
