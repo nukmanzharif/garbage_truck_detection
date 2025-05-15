@@ -1,0 +1,29 @@
+# configs/pipeline_config.yaml
+input:
+  source: 0  # 0 for webcam, or video file path
+  width: 640
+  height: 480
+  fps: 30
+
+processing:
+  skip_frames: 2  # Process every n frames
+  roi:  # Region of interest (optional)
+    enabled: false
+    # Format: [x1, y1, x2, y2] in normalized coordinates (0-1)
+    coordinates: [0.0, 0.0, 1.0, 1.0]
+
+tracking:
+  enabled: true
+  tracker: "bytetrack"  # Options: "bytetrack", "botsort"
+  persist_time: 30  # Frames to keep a lost track
+
+output:
+  save_video: true
+  output_path: "outputs/visualizations/output.mp4"
+  display: true
+  draw_tracks: true
+  draw_timestamps: true
+
+logging:
+  enabled: true
+  log_file: "outputs/logs/detections.csv"

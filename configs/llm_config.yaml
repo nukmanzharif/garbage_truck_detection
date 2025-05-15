@@ -1,0 +1,15 @@
+# configs/llm_config.yaml
+
+# API Configuration
+api_key: ""  # Set via environment variable OPENAI_API_KEY
+model: "gpt-4o"  # Using the latest GPT-4o model
+max_tokens: 150
+temperature: 0.2
+retry_limit: 3
+retry_delay: 2  # seconds between retries
+
+# Classifier Configuration
+classifier:
+  prompt_template: "You are a waste management vehicle identification expert. Look at this image and determine if this is a garbage truck (waste collection vehicle). Answer with just 'Yes' or 'No', followed by a brief explanation of why you made that determination."
+  confidence_threshold: 0.8
+  result_dir: "outputs/results"
