@@ -97,25 +97,5 @@ The system produces several outputs:
 5. **Classification Results**: LLM determination of garbage truck status
 6. **Reports**: Summary reports in CSV, HTML, and visualization formats
 
-## Output Directory Structure
 
-
-outputs/
-├── visualizations/
-│ ├── run_YYYYMMDD_HHMMSS/
-│ │ ├── best_frames/
-│ │ │ ├── best_truck_1.jpg
-│ │ │ └── best_frames_info.csv
-│ │ ├── reports/
-│ │ │ ├── garbage_truck_report.csv
-│ │ │ ├── report.html
-│ │ │ └── timeline.png
-│ │ ├── extracted_frames.csv
-│ │ ├── truck_timelines.csv
-│ │ └── classified_trucks.csv
-│ ├── garbage_truck_summary.csv
-│ └── output_video.mp4
-└── logs/
-├── detections.csv
-└── simplified_detections.csv
 

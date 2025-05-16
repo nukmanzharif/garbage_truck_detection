@@ -144,6 +144,21 @@ def generate_html_report(report_path, output_dir=None):
             }}
             h1, h2 {{ color: #333; }}
             h3 {{ color: #555; }}
+            .browser-link {{
+                display: block;
+                margin: 20px 0;
+                padding: 15px;
+                background-color: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: bold;
+                text-align: center;
+                font-size: 16px;
+            }}
+            .browser-link:hover {{
+                background-color: #3e8e41;
+            }}
         </style>
     </head>
     <body>
@@ -151,10 +166,10 @@ def generate_html_report(report_path, output_dir=None):
             <div class="header">
                 <h1>Garbage Truck Detection Report</h1>
             </div>
-            
             <div class="summary">
                 <h2>Summary</h2>
                 <p><strong>Total garbage trucks detected:</strong> {len(report_df)}</p>
+                <a href="../truck_timeline.html" class="browser-link">View Truck Timeline Visualization</a>
             </div>
             
             <h2>Detected Garbage Trucks</h2>
@@ -199,7 +214,11 @@ def generate_html_report(report_path, output_dir=None):
     with open(html_path, 'w') as f:
         f.write(html_content)
     
+    # Create a file:// URL for direct browser opening
+    absolute_path = os.path.abspath(html_path)
+    file_url = f"file:///{absolute_path.replace(os.sep, '/')}"
     print(f"HTML report generated: {html_path}")
+    print(f"Open in browser: {file_url}")
     return html_path
 
 def format_video_time(frame, fps):
@@ -291,11 +310,29 @@ def create_detection_timeline(report_path, fps=30, output_dir=None):
                 background-color: #f9f9f9;
                 border-radius: 8px;
             }}
+            .report-link {{
+                display: block;
+                margin: 20px auto;
+                padding: 15px;
+                background-color: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                font-weight: bold;
+                text-align: center;
+                width: fit-content;
+                font-size: 16px;
+            }}
+            .report-link:hover {{
+                background-color: #3e8e41;
+            }}
         </style>
     </head>
     <body>
         <div class="container">
             <h1>Garbage Truck Detection Timeline</h1>
+            
+            <a href="./garbage_truck_report_{os.path.basename(report_path).split('.')[0].replace('garbage_truck_report_', '')}/report.html" class="report-link">View Detailed Report</a>
             
             <div class="timeline">
     """
@@ -350,5 +387,9 @@ def create_detection_timeline(report_path, fps=30, output_dir=None):
     with open(timeline_path, 'w') as f:
         f.write(html_content)
     
+    # Create a file:// URL for direct browser opening
+    absolute_path = os.path.abspath(timeline_path)
+    file_url = f"file:///{absolute_path.replace(os.sep, '/')}"
     print(f"Timeline visualization generated: {timeline_path}")
+    print(f"Open in browser: {file_url}")
     return timeline_path

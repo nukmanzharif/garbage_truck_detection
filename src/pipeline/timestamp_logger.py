@@ -190,28 +190,99 @@ class TimestampLogger:
             tracker_id = int(detection['tracker_id'])
             confidence = float(detection['confidence'])
             
-            # Get or initialize the best frame info for this truck
+            # Extract detection coordinates
+            x1, y1, x2, y2 = int(detection['x1']), int(detection['y1']), int(detection['x2']), int(detection['y2'])
+            
+            # Calculate how centered the detection is in the frame
+            frame_height, frame_width = frame.shape[:2]
+            box_center_x = (x1 + x2) / 2
+            box_center_y = (y1 + y2) / 2
+            
+            # Calculate distance from center (0-1 where 0 means perfectly centered)
+            center_distance = (((box_center_x - frame_width/2) / (frame_width/2))**2 + 
+                              ((box_center_y - frame_height/2) / (frame_height/2))**2)**0.5
+            
+            # Check if box is near edge (0.1 means within 10% of edge)
+            near_edge = (x1 < frame_width * 0.1 or 
+                        x2 > frame_width * 0.9 or 
+                        y1 < frame_height * 0.1 or 
+                        y2 > frame_height * 0.9)
+            
+            # Adjust confidence to prefer centered trucks that aren't near edges
+            adjusted_confidence = confidence
+            if near_edge:
+                adjusted_confidence = confidence * 0.8  # Penalize trucks near edges
+            
+            # Check if we should save this frame
             if tracker_id not in self.best_frames:
                 self.best_frames[tracker_id] = {
                     'confidence': confidence,
+                    'adjusted_confidence': adjusted_confidence,
                     'frame_number': frame_number,
                     'frame_path': None,
-                    'video_time': self.get_video_time_formatted(frame_number, fps)
+                    'center_distance': center_distance,
+                    'near_edge': near_edge,
+                    'video_time': self.get_video_time_formatted(frame_number, fps),
+                    'bbox': [x1, y1, x2, y2]
                 }
-                # Always save the first frame
                 should_save = True
             else:
-                # Only save if confidence is higher than previous best
-                should_save = confidence > self.best_frames[tracker_id]['confidence']
+                # Compare adjusted confidence to prefer centered trucks
+                prev_adjusted = self.best_frames[tracker_id].get('adjusted_confidence', 
+                                                              self.best_frames[tracker_id]['confidence'])
+                
+                # Use adjusted confidence to determine if we should save
+                should_save = adjusted_confidence > prev_adjusted
+                
                 if should_save:
+                    # Delete previous best frame if it exists
+                    if self.best_frames[tracker_id]['frame_path'] and os.path.exists(self.best_frames[tracker_id]['frame_path']):
+                        try:
+                            os.remove(self.best_frames[tracker_id]['frame_path'])
+                        except:
+                            pass
+                            
+                    # Update frame info with new best frame
                     self.best_frames[tracker_id]['confidence'] = confidence
+                    self.best_frames[tracker_id]['adjusted_confidence'] = adjusted_confidence
                     self.best_frames[tracker_id]['frame_number'] = frame_number
+                    self.best_frames[tracker_id]['center_distance'] = center_distance
+                    self.best_frames[tracker_id]['near_edge'] = near_edge
                     self.best_frames[tracker_id]['video_time'] = self.get_video_time_formatted(frame_number, fps)
+                    self.best_frames[tracker_id]['bbox'] = [x1, y1, x2, y2]
             
             if should_save:
-                # Save the frame
-                frame_filename = os.path.join(best_frames_dir, f"truck_{tracker_id}_frame_{frame_number}.jpg")
-                cv2.imwrite(frame_filename, frame)
+                # Create a copy of the frame
+                annotated_frame = frame.copy()
+                
+                # Add some padding around the bounding box (10% of box dimensions)
+                padding_x = int((x2 - x1) * 0.1)
+                padding_y = int((y2 - y1) * 0.1)
+                
+                # Calculate the crop coordinates with padding (ensure within image bounds)
+                crop_x1 = max(0, x1 - padding_x)
+                crop_y1 = max(0, y1 - padding_y)
+                crop_x2 = min(frame_width, x2 + padding_x)
+                crop_y2 = min(frame_height, y2 + padding_y)
+                
+                # Crop the image to just the truck with padding
+                cropped_frame = annotated_frame[crop_y1:crop_y2, crop_x1:crop_x2]
+                
+                # Draw bounding box on cropped image (adjust coordinates for crop)
+                box_x1 = x1 - crop_x1
+                box_y1 = y1 - crop_y1
+                box_x2 = x2 - crop_x1
+                box_y2 = y2 - crop_y1
+                cv2.rectangle(cropped_frame, (box_x1, box_y1), (box_x2, box_y2), (0, 255, 0), 2)
+                
+                # Draw label with confidence and ID
+                label = f"truck {confidence:.2f} ID:{tracker_id}"
+                cv2.putText(cropped_frame, label, (box_x1, box_y1-5), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                
+                # Save only one image per truck with consistent filename
+                frame_filename = os.path.join(best_frames_dir, f"truck_{tracker_id}_best.jpg")
+                cv2.imwrite(frame_filename, cropped_frame)
                 self.best_frames[tracker_id]['frame_path'] = frame_filename
     
     def get_best_frames(self):
